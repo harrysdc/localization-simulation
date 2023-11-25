@@ -2,6 +2,6 @@
 KF, PF, Pybullet
 ## Conda
 ```
-at-working-dir$ conda create -f requirement.txt -p test-env python=3.7
-conda activate .\test-env
+work-dir$ conda create -f requirement.txt -p test-env python=3.7
+work-dir$ conda activate .\test-env
 ```
