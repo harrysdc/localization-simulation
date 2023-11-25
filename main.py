@@ -38,6 +38,7 @@ def main(screenshot=False):
     TODO: Check collision of estiamte pose using collision_fn
     TODO: Compute psoe error between gt and estimation
     TODO: Tune sensor noise covariance Q
+    TODO: plot estimated poses
     """
     
 
