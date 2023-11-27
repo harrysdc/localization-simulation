@@ -1,4 +1,4 @@
-name: C:\Data\umich\fall-2023\test-env
+name: test-env
 channels:
   - conda-forge
   - defaults
