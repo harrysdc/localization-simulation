@@ -4,8 +4,8 @@ from utils import get_collision_fn_PR2, load_env, execute_trajectory, draw_spher
 from pybullet_tools.utils import connect, disconnect, get_joint_positions, wait_if_gui, set_joint_positions, joint_from_name, get_link_pose, link_from_name
 from pybullet_tools.pr2_utils import PR2_GROUPS
 from data import generateControls, generatePath, generateSensorData
-from kf import kalmanFilter, motionModel
-from pf import particleFilter
+from kf import kalmanFilter, motionModel, plot_cov
+# from pf import particleFilter
 
 
 def main(screenshot=False):
@@ -31,7 +31,8 @@ def main(screenshot=False):
         ])
     sensor_data = generateSensorData(path, Q)
 
-
+    plt.ion()
+    plot_axes = plt.subplot(111, aspect='equal')   
 
     """
     TODO: Call KF, PF to estimate robot pose
@@ -40,7 +41,40 @@ def main(screenshot=False):
     TODO: Tune sensor noise covariance Q
     TODO: plot estimated poses
     """
+    # initialize mean and covariance of state estimate gaussian
+    mu = np.array(sensor_data[0]).transpose() # 3x1
+    Sigma = np.eye(3) #3x3
+
+    N = 720 # number of data points to consider, can tune this later
+    estimated_states = np.zeros((3,N)) #3x100
     
+    # noise covariance matrices    
+    R = np.identity(3) * 0.001
+    Q = np.identity(3) * 0.001
+
+    for i in range(1,N):
+        z = np.matrix(sensor_data[i]).transpose() #current state, 3x1
+        vel = v[i] #np.matrix(v[i]).transpose() #current v
+        ang_vel = np.matrix(w[i]).transpose() #current w
+        # comes from v and w from generateControls
+
+        u = np.array([[vel*np.cos(z[2,0])*0.1],[vel*np.sin(z[2,0])*0.1],[0]]) #dx, dy, dtheta
+        #run the Kalman Filter
+        mu, Sigma = kalmanFilter(np.reshape(mu, (3, 1)), Sigma, z, u, Q, R)#extendedKalmanFilter(z, vel, ang_vel, mu, Sigma, R, Q) 
+        #store the result
+        estimated_states[:,i] = np.squeeze(mu) #does this need sigma too?
+        # if i%3==0:
+            # plot_cov(mu,Sigma,plot_axes)
+
+    #compute the error between your estimate and ground truth
+    state_errors = np.transpose(estimated_states[:,0:N]) - path[0:N]
+    total_error=np.sum(np.linalg.norm(state_errors, axis=0))
+    print("Total Error: %f"%total_error)
+
+    # TODO: plot estimated poses? not sure
+    plt.plot(estimated_states[0,0:N], estimated_states[1,0:N],'r',linewidth=1.0)
+    plt.xlabel('x')
+    plt.ylabel('y')
 
 
     gt_x = [x for x, y, theta in path]
