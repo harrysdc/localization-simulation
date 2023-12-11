@@ -25,9 +25,9 @@ def main(screenshot=False):
     v, w = generateControls()
     path = generatePath(v, w, start_config)
     Q = np.array([
-        [0.1, 0.0, 0.0],
-        [0.0, 0.1, 0.0], 
-        [0.0, 0.0, 0.1]
+        [0.05, 0.0, 0.0],
+        [0.0, 0.05, 0.0], 
+        [0.0, 0.0, 0.05]
         ])
     sensor_data = generateSensorData(path, Q)
 
@@ -47,6 +47,8 @@ def main(screenshot=False):
 
     N = 720 # number of data points to consider, can tune this later
     estimated_states = np.zeros((3,N)) #3x100
+    estimated_states[:,0] = np.array(sensor_data[0]).transpose()
+
     
     # noise covariance matrices    
     R = np.identity(3) * 0.001
@@ -72,7 +74,7 @@ def main(screenshot=False):
     print("Total Error: %f"%total_error)
 
     # TODO: plot estimated poses? not sure
-    plt.plot(estimated_states[0,0:N], estimated_states[1,0:N],'r',linewidth=1.0)
+    plt.plot(estimated_states[0,0:N], estimated_states[1,0:N],'r',linewidth=1.0, label='KF estimate')
     plt.xlabel('x')
     plt.ylabel('y')
 
@@ -82,7 +84,7 @@ def main(screenshot=False):
     sd_x = [x for x, y, theta in sensor_data]
     sd_y = [y for x, y, theta in sensor_data]
     plt.scatter(gt_x, gt_y, s=2, label='ground truth')
-    plt.scatter(sd_x, sd_y, s=2, label='sensor data')
+    plt.scatter(sd_x, sd_y, s=2, label='sensor data', color = 'gray')
     plt.title('KF Pose estimation')
     plt.legend()
     plt.pause(0.001)
