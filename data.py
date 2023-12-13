@@ -79,9 +79,9 @@ def generateSensorData(path, Q):
     sensor_data = []
     for i in range(len(path)):
         gt = path[i]
-        noisy_x = gt[0] + random.uniform(-Q[0,0], Q[0,0])
-        noisy_y = gt[1] + random.uniform(-Q[1,1], Q[1,1])
-        noisy_theta = gt[2] + random.uniform(-Q[2,2], Q[2,2])
+        noisy_x = gt[0] + random.gauss(0, Q[0,0])
+        noisy_y = gt[1] + random.gauss(0, Q[1,1])
+        noisy_theta = gt[2] + random.gauss(0, Q[2,2])
         sensor_data.append((noisy_x, noisy_y, noisy_theta))
     
     return sensor_data
