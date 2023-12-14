@@ -2,7 +2,9 @@
 KF, PF, Pybullet
 
 ## PIP
+```
 install.sh
+```
 
 ## Conda
 ```
