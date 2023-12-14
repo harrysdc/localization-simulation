@@ -16,7 +16,7 @@ def demoKF(screenshot=False):
     start_config = tuple(get_joint_positions(robots['pr2'], base_joints)) # (-3.4, -1.4, 0.0)
     goal_config = (2.6, -1.3, -np.pi/2)
 
-    v, w = generateControls()
+    v, w = generateControls_zigzag()
     path = generatePath(v, w, start_config)
     Q = np.eye(3) * 1.0
     sensor_data = generateSensorData(path, Q)
@@ -25,7 +25,7 @@ def demoKF(screenshot=False):
     plot_axes = plt.subplot(111, aspect='equal')   
 
     # number of data points
-    N = 720 #350 (zigzag) #200 (3) #720 (normal control)
+    N = 650 #350 (zigzag) #200 (3) #720 (normal control)
     estimated_states = np.zeros((3,N))
     estimated_states[:,0] = np.array(sensor_data[0]).transpose()
     mu = np.array(sensor_data[0]).transpose() # 3x1
@@ -82,7 +82,7 @@ def demoPF():
     start_config = tuple(get_joint_positions(robots['pr2'], base_joints)) # (-3.4, -1.4, 0.0)
     goal_config = (2.6, -1.3, -np.pi/2)
 
-    v, w = generateControls()
+    v, w = generateControls_zigzag()
     path = generatePath(v, w, start_config)
     Q = np.eye(3) * 1.0
     sensor_data = generateSensorData(path, Q)
@@ -94,7 +94,7 @@ def demoPF():
     mu = np.array(sensor_data[0]).transpose() # 3x1
     Sigma = np.eye(3) * 0.001
     # number of data points
-    N = 720 #350 #200 #720 
+    N = 650 #350 #200 #720 
     estimated_states = np.zeros((3,N))
     estimated_states[:,0] = np.array(sensor_data[0]).transpose()
 

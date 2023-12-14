@@ -149,8 +149,40 @@ def generateControls_zigzag():
     v9 = [0.25 for i in range(50)]
     w9 = [0.0 for i in range(50)]
 
-    v = v1 + v2 + v3 + v4 + v5 + v6 + v7 + v8 + v9 
-    w = w1 + w2 + w3 + w4 + w5 + w6 + w7 + w8 + w9 
+    # turn L
+    v10 = [0.0 for i in range(25)]
+    w10 = [0.75 for i in range(25)]
+    
+    # forward
+    v11 = [0.25 for i in range(50)]
+    w11 = [0.0 for i in range(50)]
+
+    # turn R
+    v12 = [0.0 for i in range(25)]
+    w12 = [-0.75 for i in range(25)]
+    
+    # forward
+    v13 = [0.25 for i in range(50)]
+    w13 = [0.0 for i in range(50)]
+
+    # turn L
+    v14 = [0.0 for i in range(25)]
+    w14 = [0.75 for i in range(25)]
+    
+    # forward
+    v15 = [0.25 for i in range(50)]
+    w15 = [0.0 for i in range(50)]
+
+    # turn R
+    v16 = [0.0 for i in range(25)]
+    w16 = [-0.75 for i in range(25)]
+    
+    # forward
+    v17 = [0.25 for i in range(50)]
+    w17 = [0.0 for i in range(50)]
+
+    v = v1 + v2 + v3 + v4 + v5 + v6 + v7 + v8 + v9 + v10 +v11 +v12 +v13 +v14 + v15 + v16 + v17
+    w = w1 + w2 + w3 + w4 + w5 + w6 + w7 + w8 + w9 + w10 +w11 +w12 +w13 +w14 + w15 + w16 + w17
     with open('test_path.txt', 'w') as file:
         v_str = ', '.join(map(str, v))
         w_str = ', '.join(map(str, w))
