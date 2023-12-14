@@ -18,7 +18,7 @@ def demoKF(screenshot=False):
 
     v, w = generateControls()
     path = generatePath(v, w, start_config)
-    Q = np.eye(3) * 0.02
+    Q = np.eye(3) * 1.0
     sensor_data = generateSensorData(path, Q)
 
     plt.ion()
@@ -53,7 +53,7 @@ def demoKF(screenshot=False):
     plt.plot(estimated_states[0,0:N], estimated_states[1,0:N],'r',linewidth=1.0, label='KF estimate')
     cp_x = [x for x, y, theta in points_collision]
     cp_y = [y for x, y, theta in points_collision]
-    plt.scatter(cp_x, cp_y, s=50, alpha=0.5, label='points in obstacles', color = 'yellow')
+    # plt.scatter(cp_x, cp_y, s=50, alpha=0.5, label='points in obstacles', color = 'yellow')
 
     gt_x = [x for x, y, theta in path]
     gt_y = [y for x, y, theta in path]
@@ -82,9 +82,9 @@ def demoPF():
     start_config = tuple(get_joint_positions(robots['pr2'], base_joints)) # (-3.4, -1.4, 0.0)
     goal_config = (2.6, -1.3, -np.pi/2)
 
-    v, w = generateControls_3()
+    v, w = generateControls()
     path = generatePath(v, w, start_config)
-    Q = np.eye(3) * 0.02
+    Q = np.eye(3) * 1.0
     sensor_data = generateSensorData(path, Q)
 
     plt.ion()
@@ -94,7 +94,7 @@ def demoPF():
     mu = np.array(sensor_data[0]).transpose() # 3x1
     Sigma = np.eye(3) * 0.001
     # number of data points
-    N = 200 #350 #200 #720 
+    N = 720 #350 #200 #720 
     estimated_states = np.zeros((3,N))
     estimated_states[:,0] = np.array(sensor_data[0]).transpose()
 
@@ -112,7 +112,7 @@ def demoPF():
     initial_pose = np.array(sensor_data[0])
     pf = PF(initial_pose)
     odom_previous_pose = initial_pose
-    true_previous_pose = initial_pose
+    true_previous_pose = path[0]
     for i in range(1, N):
         input = [v[i], w[i]]
         odom_cur_pose = Odometry(input, odom_previous_pose)
@@ -153,5 +153,5 @@ def demoPF():
 
 
 if __name__ == '__main__':
-    demoKF()
-    # demoPF()
+    # demoKF()
+    demoPF()
