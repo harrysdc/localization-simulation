@@ -1,7 +1,6 @@
 import random
 import numpy as np
-import scipy
-from scipy import stats
+from scipy.stats import multivariate_normal
 
 class ParticleFilter():
     """
@@ -9,68 +8,77 @@ class ParticleFilter():
     """
     def particleFilter(self, v, w, z):
         '''
-        X -- input set of particles and weight tuple (state, weight)
-        u -- action
+        v, w -- action
         z -- sensor measurement
         '''
         # prediction/correction steps
-        particles = ParticleFilter.apply_action(v, w)
-        weights = ParticleFilter.likelihood(z)
-        X_bar = (particles, weights) #how to combine these two arrays?
+        self.apply_action(v, w)
+        self.likelihood(z)
 
         # resampling step
-        X_return = ParticleFilter.resampling(X_bar)
-        return X_return
+        self.resampling()
+
+        # get average particles of best X% of particles
+        index = int(0.5 * self.num_particles)
+        best_particles = self.particles[:index]
+
+        mu = np.zeros((3,1))
+        mu[0] = np.mean(best_particles[0])
+        mu[1] = np.mean(best_particles[1])
+        mu[2] = np.mean(best_particles[2])
+
+        return mu
+    
     
     def apply_action(self, v, w, dt=0.1):
         # avoid divide by zero
         # if w == 0:
         #     w = 0.0001
-        particles = []
+        # particles = []
         for particle in self.particles:
-            x = particle[0][0]
-            y = particle[0][1]
-            theta = particle[0][2]
+            x = particle[0]
+            y = particle[1]
+            theta = particle[2]
 
             new_pose = np.zeros((3,1))
             new_pose[0] = x + v*np.cos(theta)*dt #-v/w*np.sin(theta) + v/w*np.sin(theta+w*dt)
             new_pose[1] = y + v*np.sin(theta)*dt #v/w*np.cos(theta) - v/w*np.cos(theta+w*dt)
             new_pose[2] = theta + w*dt
 
-            particles.append(new_pose)
-        return particles
+            particle = new_pose
 
-    def likelihood(self, z):
-        weights = []
-        weights.fill(1.0)
+    def likelihood(self, z, cov = 0.001): #needs tuning
+        weights = []# np.zeros(self.num_particles) + 1/self.num_particles
         for particle in self.particles:
             #compute euclidean distance between particle and sensor measurement
-            distance = np.sqrt((particle[0][0] - z[0])**2 + (particle[0][1] - z[1])**2) # use x and y position only
-            weight *= stats.norm(distance, R) #scipy.stats.norm(distance, R).pdf(z[i])
+            distance = np.sqrt((particle[0] - z[0])**2 + (particle[1] - z[1])**2 + (particle[2] - z[2])**2) # use x and y position only
+            weight = multivariate_normal.pdf(distance, 0, cov) #scipy.stats.norm(distance, R).pdf(z[i])
             weights.append(weight)
+        weights = np.asarray(weights)
         weights += 0.0001 # avoid round to zero
         weights /= sum(weights) # normalize
-        return weights
+        self.weights = weights
 
-    def resampling(self, X_prev): #pseudocode from low_variance_resampler
-        X_bar = []
-        r = random.randrange(0, self.num_particles) # random number between 0 and total particle size
-        c = X_prev[0][1] #weight of first particle
+    def resampling(self): #pseudocode from low_variance_resampler
+        new_particles = []
+        r = np.random.rand(1) / self.num_particles
         i = 0 #counter
+        c = self.weights[i] #weight of first particle
         for m in range(self.num_particles):
             U = r + (m - 1) * (1 / self.num_particles)
             while U > c:
                 i += 1
-                c = c + X_prev[i][1] # weight of i particle
-            X_bar.append(X_prev[i])
-        return X_bar
+                c += self.weights[i] # weight of i particle
+            new_particles.append(self.particles[i])
+        self.particles = np.asarray(new_particles)
+        self.weights = np.zeros(self.num_particles) + 1/self.num_particles #NOT SURE
 
-
-    def __init__(self, start_pos, sigma):
-        #initialize X at start
+    def __init__(self, mu, sigma): 
+        '''
+        mu -- start position, shape (2,)
+        sigma -- covariance, shape(2,2)
+        '''
         self.num_particles = 200
-        self.particles = []
-        for i in range(self.num_particles):
-            particle = np.random.normal(start_pos, sigma, 1)
-            weight = 1/self.num_particles # sum over all weights is 1
-            self.X.append(particle, weight)
+        self.particles = np.random.multivariate_normal(mu, sigma, self.num_particles)
+        self.weights = np.zeros(self.num_particles) + 1/self.num_particles
+

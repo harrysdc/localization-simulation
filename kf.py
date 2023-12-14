@@ -71,7 +71,7 @@ def kalmanFilter(mu, Sigma, z, u, Q, R, dt = 0.1):
     #correction step
     K = np.dot(Sigma_bar, np.dot(np.transpose(C), np.linalg.inv(np.dot(C, np.dot(Sigma_bar, np.transpose(C))) + Q)))
     mu_new = mu_bar + np.dot(K, (z - np.dot(C, mu_bar)))
-    print(mu_bar)
+    # print(mu_bar)
     Sigma_new = np.dot((np.identity(3) - np.dot(K, C)), Sigma_bar)
     ###YOUR CODE HERE###
     return mu_new, Sigma_new

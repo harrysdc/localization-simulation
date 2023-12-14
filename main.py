@@ -5,7 +5,7 @@ from pybullet_tools.utils import connect, disconnect, get_joint_positions, wait_
 from pybullet_tools.pr2_utils import PR2_GROUPS
 from data import generateControls, generatePath, generateSensorData
 from kf import kalmanFilter, motionModel, plot_cov
-# from pf import particleFilter
+from pf import ParticleFilter
 
 
 def main(screenshot=False):
@@ -54,19 +54,29 @@ def main(screenshot=False):
     R = np.identity(3) * 0.001
     Q = np.identity(3) * 0.001
 
+    # pf
+    noise = np.identity(3) * 0.001
+    # print(np.array([sensor_data[0][0], sensor_data[0][1]]))
+    pf = ParticleFilter(np.array([sensor_data[0][0], sensor_data[0][1], sensor_data[0][2]]), noise)
+
     for i in range(1,N):
         z = np.matrix(sensor_data[i]).transpose() #current state, 3x1
-        vel = v[i] #np.matrix(v[i]).transpose() #current v
-        ang_vel = np.matrix(w[i]).transpose() #current w
+        vel = v[i] #current v
+        ang_vel = w[i] #current w
         # comes from v and w from generateControls
 
         u = np.array([[vel*np.cos(z[2,0])*0.1],[vel*np.sin(z[2,0])*0.1],[0]]) #dx, dy, dtheta
+
         #run the Kalman Filter
-        mu, Sigma = kalmanFilter(np.reshape(mu, (3, 1)), Sigma, z, u, Q, R)#extendedKalmanFilter(z, vel, ang_vel, mu, Sigma, R, Q) 
-        #store the result
+        # mu, Sigma = kalmanFilter(np.reshape(mu, (3, 1)), Sigma, z, u, Q, R) #extendedKalmanFilter(z, vel, ang_vel, mu, Sigma, R, Q) 
+
+        #or the Particle Filter
+        mu = pf.particleFilter(vel, ang_vel, z)
+        
+        #store the result (KF)
         estimated_states[:,i] = np.squeeze(mu) #does this need sigma too?
         # if i%3==0:
-            # plot_cov(mu,Sigma,plot_axes)
+        #     plot_cov(mu,Sigma,plot_axes)
 
     #compute the error between your estimate and ground truth
     state_errors = np.transpose(estimated_states[:,0:N]) - path[0:N]
@@ -74,7 +84,12 @@ def main(screenshot=False):
     print("Total Error: %f"%total_error)
 
     # TODO: plot estimated poses? not sure
-    plt.plot(estimated_states[0,0:N], estimated_states[1,0:N],'r',linewidth=1.0, label='KF estimate')
+    # KF
+    # plt.plot(estimated_states[0,0:N], estimated_states[1,0:N],'r',linewidth=1.0, label='KF estimate')
+
+    # PF
+    plt.plot(estimated_states[0,0:N], estimated_states[1,0:N],'go', label='PF estimate')
+
     plt.xlabel('x')
     plt.ylabel('y')
 
