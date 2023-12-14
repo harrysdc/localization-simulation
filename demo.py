@@ -5,7 +5,7 @@ from pybullet_tools.utils import connect, disconnect, get_joint_positions, wait_
 from pybullet_tools.pr2_utils import PR2_GROUPS
 from data import generateControls, generatePath, generateSensorData
 from kf import kalmanFilter, motionModel, plot_cov
-from pf import PF2, Odometry, SensorModel
+from pf import PF, Odometry, SensorModel
 
 
 def demoKF(screenshot=False):
@@ -99,7 +99,7 @@ def demoPF():
     """
 
     initial_pose = np.array(sensor_data[0])
-    pf = PF2(initial_pose)
+    pf = PF(initial_pose)
     odom_previous_pose = initial_pose
     true_previous_pose = initial_pose
     for i in range(1, N):
