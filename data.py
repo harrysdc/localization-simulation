@@ -51,6 +51,114 @@ def generateControls():
     return v, w
 
 
+def generateControls_3():
+    """
+    Generate two list of control inputs v (velocity) and w (angular velocity) for the PR2 robot to move around the tables
+    TODO: tune steps
+    """
+
+    # forward
+    v1 = [0.2 for i in range(20)]
+    w1 = [0.0 for i in range(20)]
+
+    # backward
+    v2 = [-0.2 for i in range(20)]
+    w2 = [0.0 for i in range(20)]
+
+    # forward
+    v3 = [0.2 for i in range(20)]
+    w3 = [0.0 for i in range(20)]
+
+    # backward
+    v4 = [-0.2 for i in range(20)]
+    w4 = [0.0 for i in range(20)]
+
+    # forward
+    v5 = [0.2 for i in range(20)]
+    w5 = [0.0 for i in range(20)]
+
+    # backward
+    v6 = [-0.2 for i in range(20)]
+    w6 = [0.0 for i in range(20)]
+
+    # forward
+    v7 = [0.2 for i in range(20)]
+    w7 = [0.0 for i in range(20)]
+
+    # backward
+    v8 = [-0.2 for i in range(20)]
+    w8 = [0.0 for i in range(20)]
+
+    # forward
+    v9 = [0.2 for i in range(20)]
+    w9 = [0.0 for i in range(20)]
+
+    # backward
+    v10 = [-0.2 for i in range(20)]
+    w10 = [0.0 for i in range(20)]
+
+    v = v1 + v2 + v3 + v4 + v5 + v6 + v7 + v8 + v9 + v10
+    w = w1 + w2 + w3 + w4 + w5 + w6 + w7 + w8 + w9 + w10
+    with open('test_path.txt', 'w') as file:
+        v_str = ', '.join(map(str, v))
+        w_str = ', '.join(map(str, w))
+        file.write('[' + v_str + ']\n')
+        file.write('[' + w_str + ']\n')
+    
+    return v, w
+
+def generateControls_zigzag():
+    """
+    Generate two list of control inputs v (velocity) and w (angular velocity) for the PR2 robot to move around the tables
+    TODO: tune steps
+    """
+
+    # forward
+    v1 = [0.25 for i in range(50)]
+    w1 = [0.0 for i in range(50)]
+    
+    # turn L
+    v2 = [0.0 for i in range(25)]
+    w2 = [0.75 for i in range(25)]
+    
+    # forward
+    v3 = [0.25 for i in range(50)]
+    w3 = [0.0 for i in range(50)]
+
+    # turn R
+    v4 = [0.0 for i in range(25)]
+    w4 = [-0.75 for i in range(25)]
+    
+    # forward
+    v5 = [0.25 for i in range(50)]
+    w5 = [0.0 for i in range(50)]
+
+    # turn L
+    v6 = [0.0 for i in range(25)]
+    w6 = [0.75 for i in range(25)]
+    
+    # forward
+    v7 = [0.25 for i in range(50)]
+    w7 = [0.0 for i in range(50)]
+
+    # turn R
+    v8 = [0.0 for i in range(25)]
+    w8 = [-0.75 for i in range(25)]
+    
+    # forward
+    v9 = [0.25 for i in range(50)]
+    w9 = [0.0 for i in range(50)]
+
+    v = v1 + v2 + v3 + v4 + v5 + v6 + v7 + v8 + v9 
+    w = w1 + w2 + w3 + w4 + w5 + w6 + w7 + w8 + w9 
+    with open('test_path.txt', 'w') as file:
+        v_str = ', '.join(map(str, v))
+        w_str = ', '.join(map(str, w))
+        file.write('[' + v_str + ']\n')
+        file.write('[' + w_str + ']\n')
+    
+    return v, w
+
 def generatePath(v, w, start_pose):
     """
     Use motion model to generate ground truth path (a list of poses)

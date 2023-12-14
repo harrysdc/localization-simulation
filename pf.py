@@ -21,7 +21,7 @@ class particle():
 class PF():
     def __init__(self, initial_pose):
         self.sensor_cov = np.eye(3) * 0.02
-        self.n = 100
+        self.n = 500
         self.particles = []
 
         for i in range(self.n):
@@ -29,8 +29,8 @@ class PF():
             self.particles.append(p)
 
         self.pervious_odom_pose = initial_pose
-        self.k1 = 0.5
-        self.k2 = 0.5
+        self.k1 = 0.05 # rotation
+        self.k2 = 0.05 # translation
         self.pose = [0, 0, 0]
         self.pose[0] = initial_pose[0]
         self.pose[1] = initial_pose[1]
