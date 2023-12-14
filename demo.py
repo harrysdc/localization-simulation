@@ -5,7 +5,7 @@ from pybullet_tools.utils import connect, disconnect, get_joint_positions, wait_
 from pybullet_tools.pr2_utils import PR2_GROUPS
 from data import generateControls, generatePath, generateSensorData
 from kf import kalmanFilter, motionModel, plot_cov
-from pf import ParticleFilter
+from pf import PF2, Odometry, SensorModel
 
 
 def demoKF(screenshot=False):
@@ -18,7 +18,7 @@ def demoKF(screenshot=False):
 
     v, w = generateControls()
     path = generatePath(v, w, start_config)
-    Q = np.identity(3) * 0.02
+    Q = np.eye(3) * 0.02
     sensor_data = generateSensorData(path, Q)
 
     plt.ion()
@@ -73,27 +73,49 @@ def demoPF():
 
     v, w = generateControls()
     path = generatePath(v, w, start_config)
-    Q = np.identity(3) * 0.02
+    Q = np.eye(3) * 0.02
     sensor_data = generateSensorData(path, Q)
 
     plt.ion()
     plot_axes = plt.subplot(111, aspect='equal')   
 
-    # initialize mean and covariance of state estimate gaussian
+    # initialize state
     mu = np.array(sensor_data[0]).transpose() # 3x1
-    Sigma = np.eye(3)
+    Sigma = np.eye(3) * 0.001
     # number of data points
     N = 720
     estimated_states = np.zeros((3,N))
     estimated_states[:,0] = np.array(sensor_data[0]).transpose()
-    R = np.identity(3) * 0.001
 
-    noise = np.identity(3) * 0.001
-    pf = ParticleFilter(np.array([sensor_data[0][0], sensor_data[0][1], sensor_data[0][2]]), noise)
-    for i in range(1,N):
-        z = np.matrix(sensor_data[i]).transpose()
-        mu = pf.particleFilter(v[i], w[i], z)
-        estimated_states[:,i] = np.squeeze(mu)
+    """
+    TODO: PF not working
+    
+    pf = PF(mu, Sigma)
+    for i in range(1, N):
+        u = np.array([v[i], w[i], 1e-6])
+        pf.prediction(u)
+        mu, Sigma = pf.correction(sensor_data[i])
+        estimated_states[:,i] = mu
+    """
+
+    initial_pose = np.array(sensor_data[0])
+    pf = PF2(initial_pose)
+    odom_previous_pose = initial_pose
+    true_previous_pose = initial_pose
+    for i in range(1, N):
+        input = [v[i], w[i]]
+        odom_cur_pose = Odometry(input, odom_previous_pose)
+        sensor_mean, ground_truth = SensorModel(input, true_previous_pose)
+        
+        pf.action_model(odom_cur_pose)
+        pf.update_weight(sensor_mean)
+        pf.resample()
+        pf.estimate_pose()
+        estimated_states[:,i] = pf.pose
+        state_errors = ground_truth - pf.pose
+        odom_previous_pose = odom_cur_pose
+        true_previous_pose = ground_truth
+
 
     #compute the error between your estimate and ground truth
     state_errors = np.transpose(estimated_states[:,0:N]) - path[0:N]
