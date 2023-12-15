@@ -3,9 +3,9 @@ import matplotlib.pyplot as plt
 from utils import get_collision_fn_PR2, load_env, execute_trajectory, draw_sphere_marker, draw_line
 from pybullet_tools.utils import connect, disconnect, get_joint_positions, wait_if_gui, set_joint_positions, joint_from_name, get_link_pose, link_from_name
 from pybullet_tools.pr2_utils import PR2_GROUPS
-from data import generateControls, generateControls_3, generateControls_zigzag, generatePath, generateSensorData
+from data import generateControls, generateControls_3, generateControls_zigzag, generatePath, generateSensorData, generatePFSensorData, odometry
 from kf import kalmanFilter, motionModel, plot_cov
-from pf import PF, Odometry, SensorModel
+from pf import PF
 
 
 def demoKF(screenshot=False):
@@ -16,7 +16,7 @@ def demoKF(screenshot=False):
     start_config = tuple(get_joint_positions(robots['pr2'], base_joints)) # (-3.4, -1.4, 0.0)
     goal_config = (2.6, -1.3, -np.pi/2)
 
-    v, w = generateControls_zigzag()
+    v, w = generateControls()
     path = generatePath(v, w, start_config)
     Q = np.eye(3) * 1.0
     sensor_data = generateSensorData(path, Q)
@@ -25,7 +25,7 @@ def demoKF(screenshot=False):
     plot_axes = plt.subplot(111, aspect='equal')   
 
     # number of data points
-    N = 650 #350 (zigzag) #200 (3) #720 (normal control)
+    N = len(v)
     estimated_states = np.zeros((3,N))
     estimated_states[:,0] = np.array(sensor_data[0]).transpose()
     mu = np.array(sensor_data[0]).transpose() # 3x1
@@ -47,8 +47,8 @@ def demoKF(screenshot=False):
 
     #compute the error between your estimate and ground truth
     state_errors = np.transpose(estimated_states[:,0:N]) - path[0:N]
-    total_error=np.sum(np.linalg.norm(state_errors, axis=0))
-    print("Total Error: %f"%total_error)
+    total_error = np.sum(np.linalg.norm(state_errors, axis=0))
+    print("KF Total Path Error: %f"%total_error)
 
     plt.plot(estimated_states[0,0:N], estimated_states[1,0:N],'r',linewidth=1.0, label='KF estimate')
     cp_x = [x for x, y, theta in points_collision]
@@ -69,7 +69,7 @@ def demoKF(screenshot=False):
     plt.ioff()
     plt.show()
 
-    execute_trajectory(robots['pr2'], base_joints, path, sleep=0.2)
+    #execute_trajectory(robots['pr2'], base_joints, path, sleep=0.2)
     wait_if_gui()
     disconnect()
 
@@ -82,7 +82,7 @@ def demoPF():
     start_config = tuple(get_joint_positions(robots['pr2'], base_joints)) # (-3.4, -1.4, 0.0)
     goal_config = (2.6, -1.3, -np.pi/2)
 
-    v, w = generateControls_zigzag()
+    v, w = generateControls()
     path = generatePath(v, w, start_config)
     Q = np.eye(3) * 1.0
     sensor_data = generateSensorData(path, Q)
@@ -94,44 +94,37 @@ def demoPF():
     mu = np.array(sensor_data[0]).transpose() # 3x1
     Sigma = np.eye(3) * 0.001
     # number of data points
-    N = 650 #350 #200 #720 
+    N = len(v)
     estimated_states = np.zeros((3,N))
-    estimated_states[:,0] = np.array(sensor_data[0]).transpose()
+    estimated_states[:,0] = path[0]
+    points_collision = []
 
-    """
-    TODO: PF not working
-    
-    pf = PF(mu, Sigma)
-    for i in range(1, N):
-        u = np.array([v[i], w[i], 1e-6])
-        pf.prediction(u)
-        mu, Sigma = pf.correction(sensor_data[i])
-        estimated_states[:,i] = mu
-    """
 
-    initial_pose = np.array(sensor_data[0])
-    pf = PF(initial_pose)
-    odom_previous_pose = initial_pose
-    true_previous_pose = path[0]
+    pf = PF(path[0])
+    prev_odom = path[0]
+    prev_gt_pose = path[0]
     for i in range(1, N):
         input = [v[i], w[i]]
-        odom_cur_pose = Odometry(input, odom_previous_pose)
-        sensor_mean, ground_truth = SensorModel(input, true_previous_pose)
+        curr_odom = odometry(input, prev_odom)
+        curr_sensor_data, curr_gt_pose = generatePFSensorData(input, prev_gt_pose)
         
-        pf.action_model(odom_cur_pose)
-        pf.update_weight(sensor_mean)
+        pf.action_model(curr_odom)
+        pf.update_weight(curr_sensor_data)
         pf.resample()
-        pf.estimate_pose()
-        estimated_states[:,i] = pf.pose
-        state_errors = ground_truth - pf.pose
-        odom_previous_pose = odom_cur_pose
-        true_previous_pose = ground_truth
+        pf.posteriorPose()
+        estimated_states[:,i] = pf.state
+        state_errors = curr_gt_pose - pf.state
+        prev_odom = curr_odom
+        prev_gt_pose = curr_gt_pose
+
+        if collision_fn(tuple(pf.state)):
+            points_collision.append(tuple(pf.state))
 
 
     #compute the error between your estimate and ground truth
     state_errors = np.transpose(estimated_states[:,0:N]) - path[0:N]
     total_error=np.sum(np.linalg.norm(state_errors, axis=0))
-    print("Total Error: %f"%total_error)
+    print("PF Total Path Error: %f"%total_error)
 
     plt.plot(estimated_states[0,0:N], estimated_states[1,0:N],'r', label='PF estimate')
     gt_x = [x for x, y, theta in path]
@@ -147,11 +140,15 @@ def demoPF():
     plt.pause(0.001)
     plt.ioff()
     plt.show()
-    execute_trajectory(robots['pr2'], base_joints, path, sleep=0.2)
+    #execute_trajectory(robots['pr2'], base_joints, path, sleep=0.2)
     wait_if_gui()
     disconnect()
 
 
 if __name__ == '__main__':
-    # demoKF()
+    print("Expected runtime: < 5 mins")
+    print("Demo KF and PF estimation")
+    print("Sensor noise level: high (val=1.0)")
+    print("Please close the plot and press enter if it pauses")
+    demoKF()
     demoPF()
