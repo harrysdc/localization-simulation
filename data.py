@@ -225,3 +225,34 @@ def generateSensorData(path, Q):
         sensor_data.append((noisy_x, noisy_y, noisy_theta))
     
     return sensor_data
+
+
+def generatePFSensorData(input, prev_pose, sensor_cov=np.eye(3), dt=0.1):
+#def generatePFSensorData(input, prev_pose, sensor_cov=np.eye(3)*0.02, dt=0.1):
+    v = input[0]
+    w = input[1]
+    delta_x = v*dt*np.cos(prev_pose[2] + w*dt)
+    delta_y = v*dt*np.sin(prev_pose[2] + w*dt)
+    delta_theta = w * dt
+    delta_pose = np.array([delta_x, delta_y, delta_theta])
+    curr_pose = prev_pose + delta_pose
+
+    new_pose = np.random.multivariate_normal(curr_pose, sensor_cov)
+    return new_pose, curr_pose
+
+
+def odometry(input, prev_pose, C=0.5, dt=0.1):
+    v = input[0]
+    w = input[1]
+
+    R = np.array([[(C* abs(v)+C*abs(w))**2, 0], [0, (C* abs(v)+C*abs(w))**2]])
+    rand = np.random.multivariate_normal(input, R)
+    v_actual = rand[0]
+    w_actual = rand[1]
+
+    delta_x = v_actual*dt*np.cos(prev_pose[2] + w_actual*dt)
+    delta_y = v_actual*dt*np.sin(prev_pose[2] + w_actual*dt)
+    delta_theta = w_actual * dt
+    delta_pose = np.array([delta_x, delta_y, delta_theta])
+    new_pose = prev_pose + delta_pose
+    return new_pose
